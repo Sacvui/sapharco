@@ -27,6 +27,8 @@ const Map = () => {
   useEffect(() => {
     // Initialize nearby users data
     initializeNearbyUsers();
+    // Initialize pharmacy reps
+    initializePharmacyReps();
     
     // Lấy vị trí hiện tại của user
     if (navigator.geolocation) {

@@ -300,6 +300,45 @@ export const initializeNearbyUsers = () => {
   return existingUsers;
 };
 
+// Initialize Pharmacy Reps from JSON file
+export const initializePharmacyReps = async () => {
+  try {
+    const pharmacyRepsData = await import('../data/pharmacyReps.json');
+    const reps = pharmacyRepsData.pharmacyReps || pharmacyRepsData.default?.pharmacyReps || [];
+    
+    // Lưu vào localStorage
+    const existingUsers = getFromLocalStorage('users', []);
+    const existingRepIds = existingUsers.map(u => u.id);
+    
+    // Thêm reps vào users nếu chưa có
+    reps.forEach(rep => {
+      if (!existingRepIds.includes(rep.id)) {
+        existingUsers.push({
+          ...rep,
+          password: rep.phone, // Default password = phone
+          location: rep.latitude && rep.longitude ? { lat: rep.latitude, lng: rep.longitude } : null
+        });
+      }
+    });
+    
+    saveToLocalStorage('users', existingUsers);
+    return reps;
+  } catch (error) {
+    console.error('Error loading pharmacy reps:', error);
+    return [];
+  }
+};
+
+// Get Pharmacy Reps by hub
+export const getPharmacyRepsByHub = (hub) => {
+  const users = getFromLocalStorage('users', []);
+  return users.filter(u => 
+    u.role === 'PHARMACY_REP' && 
+    u.hub === hub &&
+    (u.latitude && u.longitude)
+  );
+};
+
 // Lấy users gần vị trí hiện tại
 export const getNearbyUsers = (userLat, userLng, radiusInMeters = 10000) => {
   const users = getFromLocalStorage('nearbyUsers', []);
