@@ -14,6 +14,7 @@ import NearbyStations from './pages/NearbyStations';
 import Map from './pages/Map';
 import StationDetail from './pages/StationDetail';
 import CreateStation from './pages/CreateStation';
+import CreatePharmacy from './pages/CreatePharmacy';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/AdminDashboard';
@@ -44,6 +45,8 @@ function AppContent() {
             <Route path="/map" element={<Map />} />
             <Route path="/station/:id" element={<StationDetail />} />
             <Route path="/create-station" element={<CreateStation />} />
+            <Route path="/create-pharmacy" element={<CreatePharmacy />} />
+            <Route path="/edit-pharmacy/:id" element={<CreatePharmacy />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin" element={<AdminDashboard />} />

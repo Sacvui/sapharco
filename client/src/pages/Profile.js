@@ -46,8 +46,8 @@ const Profile = () => {
         </div>
         
         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/create-station" className="btn-primary">
-            ➕ Thêm trạm sạc
+          <Link to="/create-pharmacy" className="btn-primary">
+            ➕ Thêm nhà thuốc
           </Link>
           <Link to="/map" className="btn-secondary">
             🗺️ Xem bản đồ

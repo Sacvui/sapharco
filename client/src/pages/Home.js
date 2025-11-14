@@ -359,9 +359,9 @@ const Home = () => {
 
       {/* Bottom Actions */}
       <div className="bottom-actions">
-        <Link to="/create-station" className="bottom-action-btn primary">
+        <Link to="/create-pharmacy" className="bottom-action-btn primary">
           <span className="action-icon">➕</span>
-          <span>Thêm trạm sạc</span>
+          <span>Thêm nhà thuốc</span>
         </Link>
         
         <Link to="/profile" className="bottom-action-btn secondary">

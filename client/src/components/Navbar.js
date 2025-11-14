@@ -46,11 +46,11 @@ const Navbar = () => {
         </Link>
         
         <Link 
-          to="/create-station" 
-          className={`nav-item-enhanced ${isActive('/create-station') ? 'active' : ''}`}
+          to="/create-pharmacy" 
+          className={`nav-item-enhanced ${isActive('/create-pharmacy') ? 'active' : ''}`}
         >
           <span className="nav-icon">➕</span>
-          <span className="nav-text">Add Station</span>
+          <span className="nav-text">Thêm nhà thuốc</span>
         </Link>
         
         <InviteFriends />
@@ -145,8 +145,8 @@ const Navbar = () => {
           </Link>
           
           <Link 
-            to="/create-station" 
-            className={`mobile-nav-item ${isActive('/create-station') ? 'active' : ''}`}
+            to="/create-pharmacy" 
+            className={`mobile-nav-item ${isActive('/create-pharmacy') ? 'active' : ''}`}
             onClick={() => setShowMobileMenu(false)}
           >
             <span className="nav-icon">➕</span>

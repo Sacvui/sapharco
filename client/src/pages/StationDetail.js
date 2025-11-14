@@ -327,12 +327,13 @@ const StationDetail = () => {
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
         <Link 
           to="/home"
           className="btn-secondary"
           style={{
             flex: 1,
+            minWidth: '120px',
             textAlign: 'center',
             padding: '12px',
             background: '#f3f4f6',
@@ -345,10 +346,28 @@ const StationDetail = () => {
           ← Quay lại
         </Link>
         <Link 
+          to={`/edit-pharmacy/${pharmacy.id}`}
+          className="btn-secondary"
+          style={{
+            flex: 1,
+            minWidth: '120px',
+            textAlign: 'center',
+            padding: '12px',
+            background: 'linear-gradient(135deg, #e5aa42, #f5c869)',
+            color: '#fff',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            fontWeight: '600'
+          }}
+        >
+          ✏️ Cập nhật
+        </Link>
+        <Link 
           to={`/create-order?pharmacy=${pharmacy.id}`}
           className="btn-primary"
           style={{
             flex: 1,
+            minWidth: '120px',
             textAlign: 'center',
             padding: '12px',
             background: 'linear-gradient(135deg, #1a5ca2, #3eb4a8)',
