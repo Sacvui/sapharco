@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import customersData from '../data/customers.json';
 import productsData from '../data/products.json';
@@ -15,6 +15,7 @@ const CreateOrder = () => {
   const [orderItems, setOrderItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [userLocation, setUserLocation] = useState(null);
+  const [activeStep, setActiveStep] = useState(1); // 1: Customer, 2: Product, 3: Review
 
   const customers = useMemo(() => customersData?.customers || [], []);
   const productGroups = useMemo(() => productsData?.productGroups || [], []);
@@ -114,27 +115,32 @@ const CreateOrder = () => {
       ));
     } else {
       // Thêm sản phẩm mới
-    const newItem = {
-      id: Date.now().toString(),
-      customerId: selectedCustomer.id,
-      customerName: selectedCustomer.name,
-      customerCode: selectedCustomer.code,
-      customerAddress: selectedCustomer.address,
-      customerPhone: selectedCustomer.phone,
-      productId: product.id,
-      productCode: product.code,
-      productName: product.name,
-      productGroup: productGroups.find(g => g.id === selectedProductGroup)?.name || '',
-      unit: product.unit,
-      price: product.price,
-      quantity: quantity
-    };
+      const newItem = {
+        id: Date.now().toString(),
+        customerId: selectedCustomer.id,
+        customerName: selectedCustomer.name,
+        customerCode: selectedCustomer.code,
+        customerAddress: selectedCustomer.address,
+        customerPhone: selectedCustomer.phone,
+        productId: product.id,
+        productCode: product.code,
+        productName: product.name,
+        productGroup: productGroups.find(g => g.id === selectedProductGroup)?.name || '',
+        unit: product.unit,
+        price: product.price,
+        quantity: quantity
+      };
       setOrderItems([...orderItems, newItem]);
     }
 
     // Reset form
     setSelectedProduct('');
     setQuantity(1);
+    
+    // Chuyển sang bước review nếu có sản phẩm
+    if (orderItems.length === 0) {
+      setActiveStep(3);
+    }
   };
 
   // Xóa sản phẩm khỏi đơn hàng
@@ -185,343 +191,832 @@ const CreateOrder = () => {
   };
 
   return (
-    <div className="create-order-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div className="page-header" style={{ marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '10px' }}>
-          Nhập Đơn Hàng
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #1a5ca2 0%, #3eb4a8 50%, #e5aa42 100%)',
+      paddingBottom: orderItems.length > 0 ? '120px' : '20px'
+    }}>
+      {/* Mobile Header */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '15px 20px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
+      }}>
+        <Link to="/home" style={{ fontSize: '24px', textDecoration: 'none', color: '#1a5ca2' }}>
+          ←
+        </Link>
+        <h1 style={{ 
+          fontSize: '18px', 
+          fontWeight: 'bold', 
+          margin: 0,
+          color: '#1a5ca2',
+          flex: 1,
+          textAlign: 'center'
+        }}>
+          📋 Nhập Đơn Hàng
         </h1>
-        <p style={{ color: '#666', fontSize: '16px' }}>
-          Chọn khách hàng và thêm sản phẩm vào đơn hàng
-        </p>
+        <div style={{ width: '24px' }}></div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-        {/* Chọn khách hàng */}
-        <div className="customer-section" style={{ 
-          backgroundColor: '#fff', 
-          padding: '20px', 
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ fontSize: '20px', marginBottom: '15px', fontWeight: '600' }}>
-            Chọn Nhà Thuốc
-          </h2>
-          
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Tìm kiếm nhà thuốc..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              marginBottom: '15px',
-              fontSize: '14px'
+      {/* Progress Steps - Mobile */}
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.9)',
+        padding: '15px 20px',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        marginBottom: '15px'
+      }}>
+        {[
+          { step: 1, label: 'Chọn nhà thuốc', icon: '🏥' },
+          { step: 2, label: 'Chọn sản phẩm', icon: '💊' },
+          { step: 3, label: 'Xem lại', icon: '📋' }
+        ].map(({ step, label, icon }) => (
+          <div
+            key={step}
+            onClick={() => {
+              if (step === 1 || (step === 2 && selectedCustomer) || (step === 3 && orderItems.length > 0)) {
+                setActiveStep(step);
+              }
             }}
-          />
-
-          {/* Danh sách khách hàng */}
-          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            {filteredCustomers.map(customer => (
-              <div
-                key={customer.id}
-                onClick={() => setSelectedCustomer(customer)}
-                style={{
-                  padding: '15px',
-                  marginBottom: '10px',
-                  border: selectedCustomer?.id === customer.id ? '2px solid #1a5ca2' : '1px solid #ddd',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  backgroundColor: selectedCustomer?.id === customer.id ? '#e8f2f9' : '#fff',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <div style={{ fontWeight: '600', marginBottom: '5px', fontSize: '16px' }}>
-                  {customer.name}
-                </div>
-                <div style={{ fontSize: '14px', color: '#666', marginBottom: '3px' }}>
-                  📍 {customer.address}
-                </div>
-                <div style={{ fontSize: '14px', color: '#666', marginBottom: '3px' }}>
-                  📞 {customer.phone}
-                </div>
-                {customer.distance && (
-                  <div style={{ fontSize: '12px', color: '#1a5ca2', marginTop: '5px' }}>
-                    📏 {customer.distance < 1000 
-                      ? `${Math.round(customer.distance)}m` 
-                      : `${(customer.distance / 1000).toFixed(1)}km`}
-                  </div>
-                )}
-              </div>
-            ))}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '5px',
+              cursor: 'pointer',
+              opacity: activeStep === step ? 1 : 0.5,
+              flex: 1
+            }}
+          >
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: activeStep === step 
+                ? 'linear-gradient(135deg, #1a5ca2, #3eb4a8)' 
+                : '#e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              color: activeStep === step ? '#fff' : '#666',
+              fontWeight: 'bold'
+            }}>
+              {activeStep > step ? '✓' : icon}
+            </div>
+            <span style={{ 
+              fontSize: '11px', 
+              textAlign: 'center',
+              color: activeStep === step ? '#1a5ca2' : '#666',
+              fontWeight: activeStep === step ? '600' : '400'
+            }}>
+              {label}
+            </span>
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Chọn sản phẩm */}
-        <div className="product-section" style={{ 
-          backgroundColor: '#fff', 
-          padding: '20px', 
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ fontSize: '20px', marginBottom: '15px', fontWeight: '600' }}>
-            Chọn Sản Phẩm
-          </h2>
-
-          {/* Chọn nhóm sản phẩm */}
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-              Nhóm sản phẩm:
-            </label>
-            <select
-              value={selectedProductGroup}
-              onChange={(e) => {
-                setSelectedProductGroup(e.target.value);
-                setSelectedProduct('');
-              }}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            >
-              <option value="">-- Chọn nhóm sản phẩm --</option>
-              {productGroups.map(group => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Chọn sản phẩm */}
-          {selectedProductGroup && (
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                Sản phẩm:
-              </label>
-              <select
-                value={selectedProduct}
-                onChange={(e) => setSelectedProduct(e.target.value)}
+      <div style={{ padding: '0 15px', maxWidth: '600px', margin: '0 auto' }}>
+        {/* Step 1: Chọn khách hàng */}
+        {activeStep === 1 && (
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            marginBottom: '15px'
+          }}>
+            <h2 style={{ 
+              fontSize: '18px', 
+              marginBottom: '15px', 
+              fontWeight: '600',
+              color: '#1a5ca2'
+            }}>
+              🏥 Chọn Nhà Thuốc
+            </h2>
+            
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: '15px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Tìm kiếm nhà thuốc..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '14px'
+                  padding: '14px 45px 14px 14px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  background: '#f9fafb'
+                }}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    color: '#999'
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Selected Customer Info */}
+            {selectedCustomer && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(26, 92, 162, 0.1), rgba(62, 180, 168, 0.1))',
+                border: '2px solid #1a5ca2',
+                borderRadius: '12px',
+                padding: '15px',
+                marginBottom: '15px'
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '10px'
+                }}>
+                  <div style={{ fontWeight: '600', fontSize: '16px', color: '#1a5ca2' }}>
+                    ✅ {selectedCustomer.name}
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      color: '#999'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div style={{ fontSize: '13px', color: '#666', marginBottom: '5px' }}>
+                  📍 {selectedCustomer.address}
+                </div>
+                <div style={{ fontSize: '13px', color: '#666' }}>
+                  📞 {selectedCustomer.phone} | 🆔 {selectedCustomer.code}
+                </div>
+              </div>
+            )}
+
+            {/* Danh sách khách hàng */}
+            <div style={{ maxHeight: 'calc(100vh - 400px)', overflowY: 'auto' }}>
+              {filteredCustomers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '15px' }}>🔍</div>
+                  <p>Không tìm thấy nhà thuốc nào</p>
+                </div>
+              ) : (
+                filteredCustomers.map(customer => (
+                  <div
+                    key={customer.id}
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setActiveStep(2);
+                    }}
+                    style={{
+                      padding: '15px',
+                      marginBottom: '12px',
+                      border: selectedCustomer?.id === customer.id ? '2px solid #1a5ca2' : '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      background: selectedCustomer?.id === customer.id 
+                        ? 'linear-gradient(135deg, rgba(26, 92, 162, 0.1), rgba(62, 180, 168, 0.1))' 
+                        : '#fff',
+                      transition: 'all 0.2s',
+                      boxShadow: selectedCustomer?.id === customer.id 
+                        ? '0 4px 12px rgba(26, 92, 162, 0.2)' 
+                        : '0 2px 4px rgba(0,0,0,0.05)'
+                    }}
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'flex-start',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ fontWeight: '600', fontSize: '15px', color: '#1a1a2e', flex: 1 }}>
+                        🏥 {customer.name}
+                      </div>
+                      {customer.distance && (
+                        <div style={{ 
+                          fontSize: '12px', 
+                          color: '#1a5ca2', 
+                          background: 'rgba(26, 92, 162, 0.1)',
+                          padding: '4px 8px',
+                          borderRadius: '8px',
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap',
+                          marginLeft: '10px'
+                        }}>
+                          {customer.distance < 1000 
+                            ? `${Math.round(customer.distance)}m` 
+                            : `${(customer.distance / 1000).toFixed(1)}km`}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
+                      📍 {customer.address}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '4px' }}>
+                      📞 {customer.phone}
+                    </div>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: '#1a5ca2',
+                      fontWeight: '600',
+                      marginTop: '8px'
+                    }}>
+                      🆔 {customer.code} | 📍 Hub: {customer.hub}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Chọn sản phẩm */}
+        {activeStep === 2 && selectedCustomer && (
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            marginBottom: '15px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600',
+                color: '#1a5ca2'
+              }}>
+                💊 Chọn Sản Phẩm
+              </h2>
+              <button
+                onClick={() => setActiveStep(1)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '14px',
+                  color: '#1a5ca2',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
                 }}
               >
-                <option value="">-- Chọn sản phẩm --</option>
-                {productsInGroup.map(product => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} - {product.price.toLocaleString('vi-VN')}đ/{product.unit}
+                Đổi nhà thuốc
+              </button>
+            </div>
+
+            {/* Customer Info */}
+            <div style={{
+              background: 'rgba(26, 92, 162, 0.05)',
+              borderRadius: '12px',
+              padding: '12px',
+              marginBottom: '20px',
+              border: '1px solid rgba(26, 92, 162, 0.1)'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1a5ca2', marginBottom: '5px' }}>
+                🏥 {selectedCustomer.name}
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {selectedCustomer.address}
+              </div>
+            </div>
+
+            {/* Chọn nhóm sản phẩm */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '10px', 
+                fontSize: '14px', 
+                fontWeight: '600',
+                color: '#1a1a2e'
+              }}>
+                Nhóm sản phẩm:
+              </label>
+              <select
+                value={selectedProductGroup}
+                onChange={(e) => {
+                  setSelectedProductGroup(e.target.value);
+                  setSelectedProduct('');
+                }}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  background: '#fff',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%231a5ca2\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 14px center',
+                  paddingRight: '40px'
+                }}
+              >
+                <option value="">-- Chọn nhóm sản phẩm --</option>
+                {productGroups.map(group => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          {/* Nhập số lượng */}
-          {selectedProduct && (
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
-                Số lượng:
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            {/* Chọn sản phẩm */}
+            {selectedProductGroup && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '10px', 
+                  fontSize: '14px', 
+                  fontWeight: '600',
+                  color: '#1a1a2e'
+                }}>
+                  Sản phẩm:
+                </label>
+                <select
+                  value={selectedProduct}
+                  onChange={(e) => setSelectedProduct(e.target.value)}
                   style={{
-                    padding: '8px 15px',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    backgroundColor: '#f5f5f5',
-                    cursor: 'pointer',
-                    fontSize: '18px'
+                    width: '100%',
+                    padding: '14px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    background: '#fff',
+                    appearance: 'none',
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%231a5ca2\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 14px center',
+                    paddingRight: '40px'
                   }}
                 >
-                  -
-                </button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  min="1"
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                    fontSize: '16px'
-                  }}
-                />
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  style={{
-                    padding: '8px 15px',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    backgroundColor: '#f5f5f5',
-                    cursor: 'pointer',
-                    fontSize: '18px'
-                  }}
-                >
-                  +
-                </button>
+                  <option value="">-- Chọn sản phẩm --</option>
+                  {productsInGroup.map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} - {product.price.toLocaleString('vi-VN')}đ/{product.unit}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Nút thêm sản phẩm */}
-          {selectedProduct && selectedCustomer && (
-            <button
-              onClick={handleAddProduct}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#1a5ca2',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                marginTop: '10px'
-              }}
-            >
-              ➕ Thêm vào đơn hàng
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Danh sách sản phẩm đã chọn */}
-      {orderItems.length > 0 && (
-        <div className="order-items-section" style={{ 
-          backgroundColor: '#fff', 
-          padding: '20px', 
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{ fontSize: '20px', marginBottom: '15px', fontWeight: '600' }}>
-            Đơn Hàng ({orderItems.length} sản phẩm)
-          </h2>
-          
-          <div style={{ marginBottom: '20px' }}>
-            {orderItems.map(item => {
-              const product = productsInGroup.find(p => p.id === item.productId) || 
-                            productGroups.flatMap(g => g.products).find(p => p.id === item.productId);
-              return (
-                <div
-                  key={item.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '15px',
-                    marginBottom: '10px',
-                    backgroundColor: '#f9f9f9',
-                    borderRadius: '8px',
-                    border: '1px solid #eee'
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '600', marginBottom: '5px' }}>
-                      {item.productName}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#666' }}>
-                      Nhà thuốc: {item.customerName} ({item.customerCode}) | 
-                      Nhóm: {item.productGroup} | 
-                      Đơn giá: {item.price.toLocaleString('vi-VN')}đ/{item.unit}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <button
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        style={{
-                          padding: '5px 10px',
-                          border: '1px solid #ddd',
-                          borderRadius: '5px',
-                          backgroundColor: '#fff',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        -
-                      </button>
-                      <span style={{ minWidth: '40px', textAlign: 'center', fontWeight: '600' }}>
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        style={{
-                          padding: '5px 10px',
-                          border: '1px solid #ddd',
-                          borderRadius: '5px',
-                          backgroundColor: '#fff',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div style={{ minWidth: '120px', textAlign: 'right', fontWeight: '600', color: '#1a5ca2' }}>
-                      {(item.price * item.quantity).toLocaleString('vi-VN')}đ
-                    </div>
+            {/* Nhập số lượng */}
+            {selectedProduct && (
+              <>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '10px', 
+                    fontSize: '14px', 
+                    fontWeight: '600',
+                    color: '#1a1a2e'
+                  }}>
+                    Số lượng:
+                  </label>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '15px',
+                    background: '#f9fafb',
+                    borderRadius: '12px',
+                    padding: '5px'
+                  }}>
                     <button
-                      onClick={() => handleRemoveItem(item.id)}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       style={{
-                        padding: '8px 12px',
-                        backgroundColor: '#FF3B30',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '5px',
+                        width: '48px',
+                        height: '48px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff',
                         cursor: 'pointer',
-                        fontSize: '14px'
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        color: '#1a5ca2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        touchAction: 'manipulation'
                       }}
                     >
-                      ✕
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      min="1"
+                      style={{
+                        flex: 1,
+                        padding: '14px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        background: '#fff'
+                      }}
+                    />
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff',
+                        cursor: 'pointer',
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        color: '#1a5ca2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        touchAction: 'manipulation'
+                      }}
+                    >
+                      +
                     </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
+                {/* Product Info */}
+                {selectedProduct && (() => {
+                  const product = productsInGroup.find(p => p.id === selectedProduct);
+                  return product ? (
+                    <div style={{
+                      background: 'linear-gradient(135deg, rgba(26, 92, 162, 0.05), rgba(62, 180, 168, 0.05))',
+                      borderRadius: '12px',
+                      padding: '15px',
+                      marginBottom: '20px',
+                      border: '1px solid rgba(26, 92, 162, 0.1)'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        marginBottom: '10px'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '15px', color: '#1a1a2e' }}>
+                            {product.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                            🆔 {product.code} | 📦 {product.unit}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: 'bold', 
+                          color: '#1a5ca2'
+                        }}>
+                          {product.price.toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                      <div style={{
+                        padding: '10px',
+                        background: '#fff',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#1a5ca2'
+                      }}>
+                        Thành tiền: {(product.price * quantity).toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Nút thêm sản phẩm */}
+                <button
+                  onClick={handleAddProduct}
+                  disabled={!selectedProduct || !selectedCustomer}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background: selectedProduct && selectedCustomer
+                      ? 'linear-gradient(135deg, #1a5ca2, #3eb4a8)'
+                      : '#e5e7eb',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: selectedProduct && selectedCustomer ? 'pointer' : 'not-allowed',
+                    boxShadow: selectedProduct && selectedCustomer
+                      ? '0 4px 12px rgba(26, 92, 162, 0.3)'
+                      : 'none',
+                    touchAction: 'manipulation'
+                  }}
+                >
+                  ➕ Thêm vào đơn hàng
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Xem lại đơn hàng */}
+        {activeStep === 3 && orderItems.length > 0 && (
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '20px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            marginBottom: '15px'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px'
+            }}>
+              <h2 style={{ 
+                fontSize: '18px', 
+                fontWeight: '600',
+                color: '#1a5ca2'
+              }}>
+                📋 Đơn Hàng ({orderItems.length} sản phẩm)
+              </h2>
+              <button
+                onClick={() => setActiveStep(2)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '14px',
+                  color: '#1a5ca2',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                Thêm sản phẩm
+              </button>
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              {orderItems.map(item => {
+                const product = productGroups
+                  .flatMap(g => g.products)
+                  .find(p => p.id === item.productId);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: '15px',
+                      marginBottom: '12px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb'
+                    }}
+                  >
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '10px'
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', fontSize: '15px', marginBottom: '5px', color: '#1a1a2e' }}>
+                          {item.productName}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '3px' }}>
+                          🆔 {item.productCode} | 📦 {item.unit}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          🏥 {item.customerName} ({item.customerCode})
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          💰 {item.price.toLocaleString('vi-VN')}đ/{item.unit}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveItem(item.id)}
+                        style={{
+                          padding: '8px',
+                          backgroundColor: '#FF3B30',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontSize: '18px',
+                          width: '36px',
+                          height: '36px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          touchAction: 'manipulation'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '10px',
+                      paddingTop: '10px',
+                      borderTop: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px',
+                        background: '#fff',
+                        borderRadius: '10px',
+                        padding: '5px'
+                      }}>
+                        <button
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '10px',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                            color: '#1a5ca2',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            touchAction: 'manipulation'
+                          }}
+                        >
+                          −
+                        </button>
+                        <span style={{ 
+                          minWidth: '50px', 
+                          textAlign: 'center', 
+                          fontWeight: '600',
+                          fontSize: '16px'
+                        }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '10px',
+                            backgroundColor: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                            color: '#1a5ca2',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            touchAction: 'manipulation'
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: 'bold', 
+                        color: '#1a5ca2',
+                        minWidth: '100px',
+                        textAlign: 'right'
+                      }}>
+                        {(item.price * item.quantity).toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{
+              padding: '15px',
+              background: 'linear-gradient(135deg, rgba(26, 92, 162, 0.1), rgba(62, 180, 168, 0.1))',
+              borderRadius: '12px',
+              border: '2px solid #1a5ca2',
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a2e' }}>
+                  Tổng cộng:
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a5ca2' }}>
+                  {totalAmount.toLocaleString('vi-VN')}đ
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {activeStep === 3 && orderItems.length === 0 && (
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '40px 20px',
+            textAlign: 'center',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ fontSize: '64px', marginBottom: '20px' }}>🛒</div>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '10px', color: '#1a1a2e' }}>
+              Chưa có sản phẩm nào
+            </h3>
+            <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+              Hãy chọn nhà thuốc và thêm sản phẩm vào đơn hàng
+            </p>
+            <button
+              onClick={() => setActiveStep(1)}
+              style={{
+                padding: '14px 28px',
+                background: 'linear-gradient(135deg, #1a5ca2, #3eb4a8)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Chọn nhà thuốc
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Sticky Bottom Bar - Mobile */}
+      {orderItems.length > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(255, 255, 255, 0.98)',
+          backdropFilter: 'blur(10px)',
+          padding: '15px 20px',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+          zIndex: 100,
+          borderTop: '1px solid #e5e7eb'
+        }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingTop: '15px',
-            borderTop: '2px solid #eee'
+            marginBottom: '12px'
           }}>
-            <div style={{ fontSize: '18px', fontWeight: '600' }}>
-              Tổng cộng:
+            <div style={{ fontSize: '14px', color: '#666' }}>
+              {orderItems.length} sản phẩm
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a5ca2' }}>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1a5ca2' }}>
               {totalAmount.toLocaleString('vi-VN')}đ
             </div>
           </div>
-
           <button
             onClick={handleCheckout}
             style={{
               width: '100%',
-              padding: '15px',
-              backgroundColor: '#3eb4a8',
+              padding: '16px',
+              background: 'linear-gradient(135deg, #1a5ca2, #3eb4a8)',
               color: '#fff',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '12px',
               fontSize: '18px',
               fontWeight: '600',
               cursor: 'pointer',
-              marginTop: '20px'
+              boxShadow: '0 4px 12px rgba(26, 92, 162, 0.3)',
+              touchAction: 'manipulation'
             }}
           >
             ✅ Hoàn Tất Đơn Hàng
@@ -533,4 +1028,3 @@ const CreateOrder = () => {
 };
 
 export default CreateOrder;
-
