@@ -96,22 +96,29 @@ const Map = () => {
       const colleagues = users.filter(u => 
         u.role === 'PHARMACY_REP' && 
         u.id !== user?.id &&
-        u.hub === user?.hub &&
-        u.location
+        (user?.hub ? u.hub === user.hub : true) &&
+        (u.latitude && u.longitude)
       );
       
       // Tính khoảng cách
       const colleaguesWithDistance = colleagues.map(colleague => {
+        const colleagueLat = colleague.latitude || colleague.location?.lat;
+        const colleagueLng = colleague.longitude || colleague.location?.lng;
         const R = 6371000;
-        const dLat = (colleague.location.lat - lat) * Math.PI / 180;
-        const dLng = (colleague.location.lng - lng) * Math.PI / 180;
+        const dLat = (colleagueLat - lat) * Math.PI / 180;
+        const dLng = (colleagueLng - lng) * Math.PI / 180;
         const a = 
           Math.sin(dLat/2) * Math.sin(dLat/2) +
-          Math.cos(lat * Math.PI / 180) * Math.cos(colleague.location.lat * Math.PI / 180) * 
+          Math.cos(lat * Math.PI / 180) * Math.cos(colleagueLat * Math.PI / 180) * 
           Math.sin(dLng/2) * Math.sin(dLng/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         const distance = R * c;
-        return { ...colleague, distance };
+        return { 
+          ...colleague, 
+          distance,
+          latitude: colleagueLat,
+          longitude: colleagueLng
+        };
       }).sort((a, b) => a.distance - b.distance);
       
       setColleagues(colleaguesWithDistance);
